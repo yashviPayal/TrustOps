@@ -1,0 +1,84 @@
+services:
+  mlflow:
+    image: python:3.11-slim
+    working_dir: /tracking
+    command: >
+      sh -c "pip install --no-cache-dir mlflow==2.22.0 &&
+      mlflow server --host 0.0.0.0 --port 5000
+      --backend-store-uri sqlite:////tracking/mlflow.db
+      --default-artifact-root /tracking/artifacts"
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow-data:/tracking
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  trainer:
+    build: .
+    profiles: ["train"]
+    command: ["python", "-m", "app.ml.train"]
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MODEL_DIR: /app/models
+      DATA_PATH: /app/data/raw/creditcard.csv
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    depends_on:
+      mlflow:
+        condition: service_healthy
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      MODEL_DIR: /app/models
+      ROLLOUT_MODE: ${ROLLOUT_MODE:-champion}
+      CANARY_PERCENT: ${CANARY_PERCENT:-10}
+      CANARY_MAX_LATENCY_MS: ${CANARY_MAX_LATENCY_MS:-500}
+      CANARY_LATENCY_FAILURES: ${CANARY_LATENCY_FAILURES:-5}
+      DRIFT_WINDOW_SIZE: ${DRIFT_WINDOW_SIZE:-500}
+    volumes:
+      - ./models:/app/models
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.3.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.6.0
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  mlflow-data:
+  grafana-data:
