@@ -57,3 +57,26 @@ class Prediction(BaseModel):
     shadow_challenger_probability: float | None = None
     canary_rolled_back: bool = False
     explanation: str = "Risk estimate from an anonymized benchmark model; not proof of fraud."
+
+# --- Extension Schemas ---
+
+class ReplayStartRequest(BaseModel):
+    scenario: str = Field(default="baseline", description="baseline | elevated_fraud | feature_drift | concept_drift")
+    speed_tps: float = Field(default=5.0, ge=0.5, le=100.0)
+    label_delay_steps: int = Field(default=10, ge=1, le=100)
+
+class RolloutModeRequest(BaseModel):
+    mode: str = Field(description="champion | shadow | canary")
+    canary_percent: int | None = Field(default=None, ge=0, le=100)
+
+class PromoteRequest(BaseModel):
+    candidate_name: str = Field(default="challenger")
+    force: bool = Field(default=False)
+    reason: str = Field(default="Promotion approved via operations dashboard")
+
+class RollbackRequest(BaseModel):
+    reason: str = Field(default="Manual rollback triggered via operations dashboard")
+
+class ScamTextRequest(BaseModel):
+    text: str = Field(min_length=1, description="Email text or transcribed speech to evaluate for scam patterns")
+    source_type: str = Field(default="email", description="email | voice_transcript | sms")

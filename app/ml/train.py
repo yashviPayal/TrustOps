@@ -30,6 +30,7 @@ def make_model(C: float) -> Pipeline:
 
 def make_reference(X, features):
     reference = {}
+    rng = np.random.default_rng(42)
     for col in features:
         values = X[col].astype(float).to_numpy()
         quantiles = np.quantile(values, np.linspace(0, 1, 11)).tolist()
@@ -42,7 +43,14 @@ def make_reference(X, features):
             edges = [float(values.min()) - 1e-9, float(values.max()) + 1e-9]
         counts, bins = np.histogram(values, bins=np.asarray(edges))
         proportions = (counts / max(counts.sum(), 1)).astype(float).tolist()
-        reference[col] = {"edges": edges, "proportions": proportions}
+        sample = rng.choice(values, size=min(500, len(values)), replace=False).tolist()
+        reference[col] = {
+            "edges": edges,
+            "proportions": proportions,
+            "mean": float(np.mean(values)),
+            "std": float(np.std(values)),
+            "sample": sample,
+        }
     return reference
 
 def main():

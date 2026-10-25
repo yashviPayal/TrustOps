@@ -40,12 +40,20 @@ services:
     environment:
       MODEL_DIR: /app/models
       ROLLOUT_MODE: ${ROLLOUT_MODE:-champion}
-      CANARY_PERCENT: ${CANARY_PERCENT:-10}
+      CANARY_PERCENT: ${CANARY_PERCENT:-15}
       CANARY_MAX_LATENCY_MS: ${CANARY_MAX_LATENCY_MS:-500}
       CANARY_LATENCY_FAILURES: ${CANARY_LATENCY_FAILURES:-5}
+      CANARY_ERROR_FAILURES: ${CANARY_ERROR_FAILURES:-3}
       DRIFT_WINDOW_SIZE: ${DRIFT_WINDOW_SIZE:-500}
+      DRIFT_MIN_SAMPLES: ${DRIFT_MIN_SAMPLES:-50}
+      DRIFT_KS_ALPHA: ${DRIFT_KS_ALPHA:-0.05}
+      DRIFT_PSI_THRESHOLD: ${DRIFT_PSI_THRESHOLD:-0.20}
+      PERFORMANCE_WINDOW_SIZE: ${PERFORMANCE_WINDOW_SIZE:-100}
+      PERFORMANCE_F1_ALERT_THRESHOLD: ${PERFORMANCE_F1_ALERT_THRESHOLD:-0.60}
+      HELD_OUT_STREAM_PATH: /app/data/processed/held_out_stream.json
     volumes:
       - ./models:/app/models
+      - ./data:/app/data
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 20s

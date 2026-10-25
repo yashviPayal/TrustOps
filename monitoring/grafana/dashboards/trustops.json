@@ -1,118 +1,121 @@
 {
   "uid": "trustops-overview",
-  "title": "TrustOps - Fraud API",
+  "title": "TrustOps - MLOps Fraud Detection Platform",
   "tags": [
     "trustops",
-    "mlops"
+    "mlops",
+    "fraud-detection",
+    "drift",
+    "rollout"
   ],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 1,
-  "refresh": "10s",
+  "version": 2,
+  "refresh": "5s",
   "panels": [
     {
       "id": 1,
       "type": "stat",
-      "title": "Predictions / min",
-      "gridPos": {
-        "h": 5,
-        "w": 8,
-        "x": 0,
-        "y": 0
-      },
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "title": "Predictions / Min",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        {
-          "expr": "sum(rate(trustops_predictions_total[1m])) * 60",
-          "refId": "A"
-        }
+        { "expr": "sum(rate(trustops_predictions_total[1m])) * 60", "refId": "A" }
       ]
     },
     {
       "id": 2,
-      "type": "timeseries",
-      "title": "Prediction latency (p95)",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 8,
-        "y": 0
-      },
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "type": "stat",
+      "title": "Total Errors",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        {
-          "expr": "histogram_quantile(0.95, sum(rate(trustops_prediction_latency_seconds_bucket[5m])) by (le))",
-          "refId": "A"
-        }
+        { "expr": "trustops_prediction_errors_total", "refId": "A" }
       ]
     },
     {
       "id": 3,
-      "type": "timeseries",
-      "title": "Fraud review decisions",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 5
-      },
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "type": "stat",
+      "title": "Max Feature PSI",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        {
-          "expr": "sum by (model) (rate(trustops_predictions_total{decision=\"review\"}[5m]))",
-          "refId": "A"
-        }
+        { "expr": "trustops_input_drift_psi", "refId": "A" }
       ]
     },
     {
       "id": 4,
       "type": "stat",
-      "title": "Maximum input PSI",
-      "gridPos": {
-        "h": 5,
-        "w": 8,
-        "x": 0,
-        "y": 13
-      },
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "title": "Canary Rollbacks",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        {
-          "expr": "trustops_input_drift_psi",
-          "refId": "A"
-        }
+        { "expr": "sum(trustops_canary_rollbacks_total)", "refId": "A" }
       ]
     },
     {
       "id": 5,
-      "type": "stat",
-      "title": "Canary rollbacks",
-      "gridPos": {
-        "h": 5,
-        "w": 8,
-        "x": 8,
-        "y": 13
-      },
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "type": "timeseries",
+      "title": "Predictions by Model & Decision",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        {
-          "expr": "trustops_canary_rollbacks_total",
-          "refId": "A"
-        }
+        { "expr": "sum by (model, decision) (rate(trustops_predictions_total[1m]))", "refId": "A" }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Prediction Latency (p50, p95, p99)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "histogram_quantile(0.99, sum(rate(trustops_prediction_latency_seconds_bucket[5m])) by (le))", "legendFormat": "p99", "refId": "A" },
+        { "expr": "histogram_quantile(0.95, sum(rate(trustops_prediction_latency_seconds_bucket[5m])) by (le))", "legendFormat": "p95", "refId": "B" },
+        { "expr": "histogram_quantile(0.50, sum(rate(trustops_prediction_latency_seconds_bucket[5m])) by (le))", "legendFormat": "p50", "refId": "C" }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Input Drift Metrics (PSI & KS Stat)",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "trustops_input_drift_psi", "legendFormat": "Max PSI", "refId": "A" },
+        { "expr": "trustops_input_drift_ks_stat", "legendFormat": "Max KS Statistic", "refId": "B" }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Delayed-Label Model Performance (F1, Recall, Precision)",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "trustops_delayed_label_f1", "legendFormat": "F1 Score", "refId": "A" },
+        { "expr": "trustops_delayed_label_recall", "legendFormat": "Recall", "refId": "B" },
+        { "expr": "trustops_delayed_label_precision", "legendFormat": "Precision", "refId": "C" }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "Model Promotions",
+      "gridPos": { "h": 4, "w": 12, "x": 0, "y": 19 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "trustops_promotions_total", "refId": "A" }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Drift Evaluation Outomes",
+      "gridPos": { "h": 4, "w": 12, "x": 12, "y": 19 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum by (status) (rate(trustops_drift_evaluations_total[5m]))", "refId": "A" }
       ]
     }
   ]
