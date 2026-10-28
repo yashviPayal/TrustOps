@@ -65,6 +65,22 @@ DELAYED_LABEL_PRECISION = Gauge(
     "Precision score on delayed ground truth labels"
 )
 
+# Export zero-valued series from startup. Without these initializations,
+# Prometheus/Grafana panels show "No data" until each labelled metric has
+# been incremented or each gauge has been evaluated at least once.
+for _model in ("champion", "challenger"):
+    for _decision in ("allow", "review"):
+        for _risk in ("low", "elevated", "high"):
+            PREDICTIONS.labels(model=_model, decision=_decision, risk=_risk).inc(0)
+for _status in ("healthy", "drift_detected"):
+    DRIFT_EVALUATIONS.labels(status=_status).inc(0)
+CANARY_ROLLBACKS.labels(reason="canary_latency_or_error").inc(0)
+INPUT_DRIFT_PSI.set(0.0)
+INPUT_DRIFT_KS_STAT.set(0.0)
+DELAYED_LABEL_F1.set(0.0)
+DELAYED_LABEL_RECALL.set(0.0)
+DELAYED_LABEL_PRECISION.set(0.0)
+
 
 # ---------------------------------------------------------------------------
 # Data Drift Monitor (KS-Test + PSI + Bonferroni Correction)

@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import Response, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
@@ -480,4 +480,9 @@ def metrics():
 # ---------------------------------------------------------------------------
 frontend_dist = ROOT_DIR / "frontend" / "dist"
 if frontend_dist.exists():
+    @app.get("/dashboard", include_in_schema=False)
+    def dashboard_redirect():
+        # The frontend uses relative asset paths, so retain the trailing slash.
+        return RedirectResponse(url="/dashboard/", status_code=307)
+
     app.mount("/dashboard", StaticFiles(directory=str(frontend_dist), html=True), name="frontend")

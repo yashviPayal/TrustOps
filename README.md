@@ -1,20 +1,25 @@
-# TrustOps: Automated MLOps Framework for Cybersecurity & Fraud Detection
+# TrustOps: Automated MLOps Framework for Fraud Detection
+TrustOps is a fraud detection and model reliability platform designed to identify potentially fraudulent credit-card transactions and monitor how detection models behave as transaction patterns change. Beyond making individual predictions, it provides a structured approach to evaluating competing models, identifying suspicious changes in incoming data, monitoring prediction quality, and reducing the risks associated with model updates.
 
-TrustOps is a complete, production-grade MLOps demonstration of an end-to-end fraud detection and security lifecycle:
-- **Benchmark ML Dataset**: Standard European ULB credit-card fraud dataset (imbalanced classification: 0.172% fraud)
-- **Model Governance**: Imbalance-aware pipelines, validation-tuned threshold selection, and MLflow experiment tracking
-- **Champion / Challenger**: Controlled model evaluation, automated release gates, and safe promotion
-- **Inference & Rollout Service**: FastAPI supporting Champion-Only, Shadow Mode (dual scoring), and Canary Rollouts
-- **Automated Rollback**: Safeguard triggers on latency spikes, error bursts, and delayed-label performance drops
-- **Two-Factor Drift Monitoring**: Two-Sample Kolmogorov–Smirnov test (`ks_2samp`) + Population Stability Index (PSI) with Bonferroni multiple comparison correction
-- **Concept Drift & Delayed Labels**: Delayed ground-truth label ingestion, online confusion matrix, and performance deterioration alerts
-- **Live Transaction Replay**: Multi-scenario background replay engine (Baseline, Elevated Fraud Attack, Feature Drift, Concept Drift)
-- **Cybersecurity Scam Extension**: NLP heuristic & threat pattern detector for voice transcripts and phishing emails
-- **Operations Dashboard**: Modern React + TypeScript + Vite operations UI
-- **Prometheus & Grafana**: Production observability metrics and pre-provisioned Grafana dashboards
+The project demonstrates an end-to-end fraud detection lifecycle, from model training and evaluation to deployment, monitoring, and controlled model releases. It also includes simulated transaction scenarios and a cybersecurity scam analysis extension to explore related security threats.
+
+### Key Features:
+- **Fraud Detection**: Binary classification of legitimate and potentially fraudulent transactions using the credit-card fraud dataset.
+- **Benchmark ML Dataset**: Standard European ULB credit-card fraud dataset (imbalanced classification: 0.172% fraud).
+- **Model Governance**: Imbalance-aware pipelines, validation-tuned threshold selection, and MLflow experiment tracking.
+- **Champion / Challenger**: Controlled model evaluation, automated release gates, and safe promotion.
+- **Inference & Rollout Service**: FastAPI supporting Champion-Only, Shadow Mode (dual scoring) and Canary Rollouts.
+- **Automated Rollback**: Safeguard triggers on latency spikes, error bursts, and delayed-label performance drops.
+- **Two-Factor Drift Monitoring**: Two-Sample Kolmogorov–Smirnov test (`ks_2samp`) with Population Stability Index (PSI) with Bonferroni multiple comparison correction.
+- **Concept Drift & Delayed Labels**: Delayed ground-truth label ingestion, online confusion matrix, and performance deterioration alerts.
+- **Live Transaction Replay**: Multi-scenario background replay engine (Baseline, Elevated Fraud Attack, Feature Drift, Concept Drift).
+- **Cybersecurity Scam Extension**: NLP heuristic & threat pattern detector for voice transcripts and phishing emails.
+- **Operations Dashboard**: Modern React + TypeScript + Vite operations UI.
+- **Prometheus & Grafana**: Production observability metrics and pre-provisioned Grafana dashboards.
+- **Git & GitHub Actions**: Version Control and CI workflow support.
 
 > [!NOTE]
-> **Operational Caveat:** This platform operates on historical anonymized benchmark data (PCA features `V1`–`V28` + `Amount`). Model predictions represent calibrated statistical risk estimates, not definitive legal proof of fraud.
+> **Operational Caveat:** This platform operates on historical anonymized benchmark data (PCA features `V1`–`V28` + `Amount`). Model predictions represent calibrated statistical risk estimates, not definitive legal proof of fraud. Production use would require further validation, security controls, operational testing, and compliance review.
 
 ---
 
@@ -161,49 +166,221 @@ TrustOps/
 - **Node.js 18+ & npm** (`node --version`)
 - **Docker Desktop** (optional for local container orchestration)
 
-### Step 1: Virtual Environment & Python Dependencies
+
+### Step 1: Create a Virtual Environment and Install Dependencies
+
+Open Windows PowerShell and navigate to the project directory:
 
 ```powershell
-# Open Windows PowerShell and enter the project directory
 cd D:\projects\TrustOps\TrustOps
 
-# Create a virtual environment
+# Create a Python virtual environment
 py -3.11 -m venv .venv
 
-# Activate the virtual environment
+# Activate the environment
 .\.venv\Scripts\Activate.ps1
-# If PowerShell script execution is restricted, run:
+
+# If script execution is restricted, run this first:
 # Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
-# Upgrade pip and install pinned requirements
+# Upgrade pip and install dependencies
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### Step 2: Build the Frontend Dashboard
+### Step 2: Configure Environment Variables
+
+Create a local `.env` file from the example configuration:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Open `.env` and review the configuration values. The available variables and their defaults are defined in `.env.example`.
+
+Important configuration settings include:
+
+| Variable | Purpose |
+|---|---|
+| `MODEL_DIR` | Directory containing trained model artifacts |
+| `DATA_PATH` | Path to the raw credit-card fraud dataset |
+| `HELD_OUT_STREAM_PATH` | Path to the held-out transaction stream |
+| `MLFLOW_TRACKING_URI` | MLflow tracking server or local tracking directory |
+| `ROLLOUT_MODE` | Initial model rollout mode |
+| `CANARY_PERCENT` | Percentage of traffic allocated to the challenger |
+| `CANARY_MAX_LATENCY_MS` | Maximum permitted challenger prediction latency |
+| `CANARY_LATENCY_FAILURES` | Latency failures required to trigger rollback |
+| `CANARY_ERROR_FAILURES` | Prediction errors required to trigger rollback |
+| `DRIFT_WINDOW_SIZE` | Number of recent transactions used for drift monitoring |
+| `DRIFT_MIN_SAMPLES` | Minimum samples required before evaluating drift |
+| `DRIFT_KS_ALPHA` | Significance level for the Kolmogorov-Smirnov test |
+| `DRIFT_PSI_THRESHOLD` | Population Stability Index threshold |
+| `DRIFT_EFFECT_SIZE_THRESHOLD` | Effect-size threshold for drift monitoring |
+| `PERFORMANCE_WINDOW_SIZE` | Window used for delayed-label performance monitoring |
+| `PERFORMANCE_F1_ALERT_THRESHOLD` | F1-score threshold for performance alerts |
+| `GRAFANA_PASSWORD` | Grafana administrator password for Docker deployment |
+
+Use the exact variable names and defaults provided in `.env.example`. Keep `.env` local and never commit credentials or secrets to GitHub.
+
+**Note:** Docker Compose reads `.env` automatically. For local Python execution, export any required variables into the PowerShell session because the application does not automatically load `.env`.
+
+For example:
+
+```powershell
+$env:MODEL_DIR = "models"
+$env:DATA_PATH = "data/raw/creditcard.csv"
+$env:MLFLOW_TRACKING_URI = "file:./mlruns"
+```
+
+These environment variables apply to the current PowerShell session.
+
+### Step 3: Download and Prepare the Dataset
+
+Download the credit-card fraud detection dataset:
+
+```powershell
+python scripts/download_data.py
+```
+
+The dataset is expected at:
+
+```text
+data/raw/creditcard.csv
+```
+
+Verify that the file exists:
+
+```powershell
+Test-Path data/raw/creditcard.csv
+```
+
+The command should return `True`.
+
+If the automatic download fails, download the dataset from [Kaggle: Credit Card Fraud Detection](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud) and place `creditcard.csv` in `data/raw/`.
+
+The dataset contains anonymized transaction features (`V1`–`V28`), the transaction amount, and the binary `Class` target. The canonical dataset also includes `Time`; the training pipeline supports compatible versions that omit it.
+
+During training, the pipeline validates the input data, creates stratified training, validation, and test splits, and generates reference distributions for subsequent drift monitoring.
+
+### Step 4: Train the Champion and Challenger Models
+
+Once the dataset is available, execute the training pipeline:
+
+```powershell
+python -m app.ml.train
+```
+
+The pipeline:
+
+1. Loads and validates the dataset.
+2. Creates stratified training, validation, and test splits.
+3. Trains two class-weighted Logistic Regression candidates with different regularization settings.
+4. Selects a classification threshold using validation data.
+5. Selects the champion based on validation average precision.
+6. Evaluates the models on held-out test data.
+7. Logs experiment parameters, metrics, and models to MLflow.
+8. Saves the trained model artifacts and reference distributions.
+
+After successful training, the following files should be available:
+
+```text
+models/
+├── champion.joblib
+├── challenger.joblib
+├── metadata.json
+└── reference.json
+```
+
+| Artifact | Purpose |
+|---|---|
+| `champion.joblib` | Model selected as the champion |
+| `challenger.joblib` | Alternative model used for comparison and rollout demonstrations |
+| `metadata.json` | Feature schema, thresholds, model lineage, and evaluation metrics |
+| `reference.json` | Training-data reference distributions for drift monitoring |
+
+The default MLflow tracking location is `file:./mlruns` when `MLFLOW_TRACKING_URI` is not configured. To log experiments to the MLflow server running through Docker Compose, start that service and set the tracking URI to `http://localhost:5000` before training locally.
+
+**Note:** Training generates model and reference artifacts. It does not automatically create `data/processed/held_out_stream.json`. Ensure the held-out replay stream is available separately if your replay workflow requires it.
+
+### Step 5: Build the Frontend Dashboard
+
+Build the frontend so the compiled dashboard can be served by FastAPI:
 
 ```powershell
 cd frontend
-npm.cmd install
+npm.cmd ci
 npm.cmd run build
 cd ..
 ```
-The built static dashboard files are placed in `frontend/dist/` and will be automatically served by FastAPI at `http://localhost:8000/dashboard/`.
 
-### Step 3: Run the Complete Automated Test Suite
+The compiled files are generated in `frontend/dist/` and served at:
+
+[http://localhost:8000/dashboard/](http://localhost:8000/dashboard/)
+
+### Step 6: Run the Automated Test Suite
+
+Run the tests after configuring the environment and generating the required artifacts:
 
 ```powershell
 python -m pytest
 ```
-Runs 33 automated tests covering preprocessing, threshold tuning, drift detection, shadow/canary rollouts, auto-rollback, delayed labels, scam analysis, and API routes in ~5 seconds.
 
-### Step 4: Start the API Service
+Review the test summary to confirm the actual number of tests and whether they passed. The suite covers areas such as preprocessing, evaluation metrics, drift detection, model rollouts, rollback safeguards, delayed-label monitoring, scam analysis, and API behaviour.
+
+### Step 7: Start the API Service
+
+Start the FastAPI application:
 
 ```powershell
 python -m uvicorn app.api.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
----
+Ensure the required model artifacts exist before starting the API.
+
+Once the service is running, access the following endpoints:
+
+| Service | URL |
+|---|---|
+| Operations dashboard | [http://localhost:8000/dashboard/](http://localhost:8000/dashboard/) |
+| Interactive API documentation | [http://localhost:8000/docs](http://localhost:8000/docs) |
+| Health check | [http://localhost:8000/health](http://localhost:8000/health) |
+| Prometheus metrics | [http://localhost:8000/metrics](http://localhost:8000/metrics) |
+
+### Alternative: Run the Complete Stack Using Docker Compose
+
+After downloading the dataset and generating the model artifacts, build and start the containers:
+
+```powershell
+docker compose build
+docker compose up -d
+docker compose ps
+```
+
+To run the training pipeline inside Docker, use the configured training profile:
+
+```powershell
+docker compose --profile train run --rm trainer
+```
+
+The training service expects the dataset under `data/raw/` and writes model artifacts under `models/`. Ensure the MLflow service is healthy before starting containerized training.
+
+The full stack exposes the following services:
+
+| Service | URL |
+|---|---|
+| FastAPI and dashboard | [http://localhost:8000](http://localhost:8000) |
+| MLflow | [http://localhost:5000](http://localhost:5000) |
+| Prometheus | [http://localhost:9090](http://localhost:9090) |
+| Grafana | [http://localhost:3000](http://localhost:3000) |
+
+Stop the containers with:
+
+```powershell
+docker compose down
+```
+
+
+
 
 ## 4. Local URLs & Service Endpoints
 
@@ -293,35 +470,7 @@ You can execute all scenarios directly through the web UI at `http://localhost:8
 
 ---
 
-## 6. Docker Compose Deployment
-
-To run the complete containerized stack:
-
-```powershell
-# 1. Build the containers
-docker compose build
-
-# 2. Start all services in background
-docker compose up -d
-
-# 3. Check service health
-docker compose ps
-```
-
-Services in Compose:
-- **API & UI**: `http://localhost:8000/dashboard/`
-- **MLflow Tracking**: `http://localhost:5000`
-- **Prometheus**: `http://localhost:9090`
-- **Grafana**: `http://localhost:3000` (`admin` / `admin`)
-
-To stop:
-```powershell
-docker compose down
-```
-
----
-
-## 7. Troubleshooting
+## 6. Troubleshooting
 
 | Symptom | Cause | Solution |
 |---|---|---|
@@ -330,3 +479,42 @@ docker compose down
 | Port 8000 or 3000 already in use | Another service is using the port | Check running processes with `netstat -ano \| findstr :8000` and stop conflicting services, or configure another port in `.env`. |
 | PowerShell script activation disabled | Windows execution policy restriction | Run `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`, then activate `.\.venv\Scripts\Activate.ps1`. |
 | npm execution policy blocked in PowerShell | Running `.ps1` wrapper blocked | Use `npm.cmd` instead of `npm`, e.g., `npm.cmd run build`. |
+
+
+
+## 7. Security and Limitations
+
+- The benchmark dataset is historical and anonymized. It does not represent every contemporary fraud pattern.
+- The V1–V28 features are transformed features rather than interpretable raw transaction attributes.
+- Synthetic replay scenarios demonstrate monitoring behavior under controlled conditions; they are not substitutes for real-world validation.
+- Statistical feature drift does not automatically prove concept drift or degraded model quality.
+- Delayed-label evaluation depends on the correctness and availability of ground-truth labels.
+- Scam-analysis rules can generate false positives and false negatives.
+- Release thresholds must be justified by evaluation results and business requirements.
+- Model promotion and rollback must be tested against failure cases before being trusted operationally.
+- Development credentials and secrets must not be committed to source control.
+- Production deployment would require additional authentication, authorization, network restrictions, secret management, audit controls, privacy safeguards, and operational validation.
+
+## 8. Future Improvements
+
+- Validate the framework against additional datasets and more realistic transaction distributions.
+- Introduce stronger authentication and authorization for operational controls.
+- Add model-artifact integrity checks and a more formal approval process.
+- Improve the handling of delayed and partially verified labels.
+- Expand monitoring to cover model quality, data quality, and service reliability together.
+- Add reproducible deployment environments and integration tests.
+- Evaluate the scam analyzer against a labeled communication dataset.
+- Establish production deployment policies, incident procedures, and audit trails.
+
+## 9. Project Summary
+
+TrustOps demonstrates how fraud detection can be treated as a complete, continuously evaluated system rather than a standalone machine learning model. It brings together model evaluation, controlled model updates, drift monitoring, delayed-label performance tracking, operational observability, and cybersecurity scam analysis in one project.
+
+The central objective is to make model behavior easier to evaluate, changes safer to manage, and potential performance problems easier to identify.
+
+---
+**Project**: TrustOps: Automated MLOps Framework for Fraud Detection
+**Purpose**: Fraud detection, model lifecycle management and monitoring demonstration
+**Dataset**: European credit-card fraud benchmark
+**Deployment**: Local development and Docker Compose
+**CI**: GitHub Actions

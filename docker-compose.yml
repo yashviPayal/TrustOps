@@ -1,12 +1,8 @@
 services:
   mlflow:
-    image: python:3.11-slim
-    working_dir: /tracking
-    command: >
-      sh -c "pip install --no-cache-dir mlflow==2.22.0 &&
-      mlflow server --host 0.0.0.0 --port 5000
-      --backend-store-uri sqlite:////tracking/mlflow.db
-      --default-artifact-root /tracking/artifacts"
+    build:
+      context: .
+      dockerfile: Dockerfile.mlflow
     ports:
       - "5000:5000"
     volumes:

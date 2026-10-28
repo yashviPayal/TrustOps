@@ -15,3 +15,6 @@ mlruns/
 mlflow.db
 logs/
 .DS_Store
+
+# Frontend dependencies
+frontend/node_modules/

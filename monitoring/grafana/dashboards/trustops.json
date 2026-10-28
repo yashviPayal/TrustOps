@@ -10,113 +10,301 @@
   ],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 2,
+  "version": 3,
   "refresh": "5s",
   "panels": [
     {
       "id": 1,
       "type": "stat",
       "title": "Predictions / Min",
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "targets": [
-        { "expr": "sum(rate(trustops_predictions_total[1m])) * 60", "refId": "A" }
+        {
+          "expr": "(sum(rate(trustops_predictions_total[1m])) * 60) or vector(0)",
+          "refId": "A"
+        }
       ]
     },
     {
       "id": 2,
       "type": "stat",
       "title": "Total Errors",
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "targets": [
-        { "expr": "trustops_prediction_errors_total", "refId": "A" }
+        {
+          "expr": "trustops_prediction_errors_total or vector(0)",
+          "refId": "A"
+        }
       ]
     },
     {
       "id": 3,
       "type": "stat",
       "title": "Max Feature PSI",
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "targets": [
-        { "expr": "trustops_input_drift_psi", "refId": "A" }
+        {
+          "expr": "trustops_input_drift_psi or vector(0)",
+          "refId": "A"
+        }
       ]
     },
     {
       "id": 4,
       "type": "stat",
       "title": "Canary Rollbacks",
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "targets": [
-        { "expr": "sum(trustops_canary_rollbacks_total)", "refId": "A" }
+        {
+          "expr": "sum(trustops_canary_rollbacks_total) or vector(0)",
+          "refId": "A"
+        }
       ]
     },
     {
       "id": 5,
       "type": "timeseries",
       "title": "Predictions by Model & Decision",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "targets": [
-        { "expr": "sum by (model, decision) (rate(trustops_predictions_total[1m]))", "refId": "A" }
+        {
+          "expr": "sum by (model, decision) (rate(trustops_predictions_total[1m])) or vector(0)",
+          "refId": "A"
+        }
       ]
     },
     {
       "id": 6,
       "type": "timeseries",
       "title": "Prediction Latency (p50, p95, p99)",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "targets": [
-        { "expr": "histogram_quantile(0.99, sum(rate(trustops_prediction_latency_seconds_bucket[5m])) by (le))", "legendFormat": "p99", "refId": "A" },
-        { "expr": "histogram_quantile(0.95, sum(rate(trustops_prediction_latency_seconds_bucket[5m])) by (le))", "legendFormat": "p95", "refId": "B" },
-        { "expr": "histogram_quantile(0.50, sum(rate(trustops_prediction_latency_seconds_bucket[5m])) by (le))", "legendFormat": "p50", "refId": "C" }
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(trustops_prediction_latency_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p99",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(trustops_prediction_latency_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(trustops_prediction_latency_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p50",
+          "refId": "C"
+        }
       ]
     },
     {
       "id": 7,
       "type": "timeseries",
       "title": "Input Drift Metrics (PSI & KS Stat)",
-      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 12 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "targets": [
-        { "expr": "trustops_input_drift_psi", "legendFormat": "Max PSI", "refId": "A" },
-        { "expr": "trustops_input_drift_ks_stat", "legendFormat": "Max KS Statistic", "refId": "B" }
+        {
+          "expr": "trustops_input_drift_psi or vector(0)",
+          "legendFormat": "Max PSI",
+          "refId": "A"
+        },
+        {
+          "expr": "trustops_input_drift_ks_stat",
+          "legendFormat": "Max KS Statistic",
+          "refId": "B"
+        }
       ]
     },
     {
       "id": 8,
       "type": "timeseries",
       "title": "Delayed-Label Model Performance (F1, Recall, Precision)",
-      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 12 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "targets": [
-        { "expr": "trustops_delayed_label_f1", "legendFormat": "F1 Score", "refId": "A" },
-        { "expr": "trustops_delayed_label_recall", "legendFormat": "Recall", "refId": "B" },
-        { "expr": "trustops_delayed_label_precision", "legendFormat": "Precision", "refId": "C" }
+        {
+          "expr": "trustops_delayed_label_f1 or vector(0)",
+          "legendFormat": "F1 Score",
+          "refId": "A"
+        },
+        {
+          "expr": "trustops_delayed_label_recall or vector(0)",
+          "legendFormat": "Recall",
+          "refId": "B"
+        },
+        {
+          "expr": "trustops_delayed_label_precision or vector(0)",
+          "legendFormat": "Precision",
+          "refId": "C"
+        }
       ]
     },
     {
       "id": 9,
       "type": "stat",
       "title": "Model Promotions",
-      "gridPos": { "h": 4, "w": 12, "x": 0, "y": 19 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 19
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "targets": [
-        { "expr": "trustops_promotions_total", "refId": "A" }
+        {
+          "expr": "trustops_promotions_total or vector(0)",
+          "refId": "A"
+        }
       ]
     },
     {
       "id": 10,
       "type": "timeseries",
       "title": "Drift Evaluation Outomes",
-      "gridPos": { "h": 4, "w": 12, "x": 12, "y": 19 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 12,
+        "y": 19
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "targets": [
-        { "expr": "sum by (status) (rate(trustops_drift_evaluations_total[5m]))", "refId": "A" }
+        {
+          "expr": "sum by (status) (rate(trustops_drift_evaluations_total[5m])) or vector(0)",
+          "refId": "A"
+        }
       ]
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "Prometheus API Scrape",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 23
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "up{job=\"trustops-api\"} or vector(0)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "value",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center"
+      }
     }
   ]
 }
